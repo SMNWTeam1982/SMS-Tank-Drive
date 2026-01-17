@@ -2,16 +2,16 @@ package frc.robot.subsystems;
 
 import java.util.function.DoubleSupplier;
 
-import org.littletonrobotics.junction.Logger;
+// import org.littletonrobotics.junction.Logger;
 
-import com.ctre.phoenix.motorcontrol.FeedbackDevice;
+// import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
-import edu.wpi.first.math.kinematics.DifferentialDriveWheelPositions;
+// import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
+// import edu.wpi.first.math.kinematics.DifferentialDriveWheelPositions;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.wpilibj.ADIS16448_IMU;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
@@ -30,7 +30,7 @@ import frc.robot.Constants.OperatorConstants;
  */
 public class DriveSubsystem extends SubsystemBase {
     private static DifferentialDrive driveTrain;
-    private static DifferentialDriveOdometry driveOdometry;
+    // private static DifferentialDriveOdometry driveOdometry;
 
     private static WPI_TalonSRX leftLeadMotor;
     private static WPI_TalonSRX leftFollowMotor;
@@ -66,13 +66,13 @@ public class DriveSubsystem extends SubsystemBase {
         leftLeadMotor.configFactoryDefault();
         leftLeadMotor.clearStickyFaults();
         leftLeadMotor.configAllSettings(DriveConstants.motorConfig());
-        leftLeadMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative);
+        // leftLeadMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative);
 
         rightLeadMotor.configFactoryDefault();
         rightLeadMotor.clearStickyFaults();
         rightLeadMotor.configAllSettings(DriveConstants.motorConfig());
         rightLeadMotor.setInverted(true);
-        rightLeadMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative);
+        // rightLeadMotor.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative);
 
         // Only configure follower motors if they are enabled
         if (OperatorConstants.enableAllMotors) {
@@ -86,20 +86,21 @@ public class DriveSubsystem extends SubsystemBase {
             rightFollowMotor.clearStickyFaults();
             rightFollowMotor.configAllSettings(DriveConstants.motorConfig());
             rightFollowMotor.follow(rightLeadMotor);
+            rightFollowMotor.setInverted(true);
         }
 
         // Initialize driveTrain with an empty Pose2d
         driveTrain = new DifferentialDrive(leftLeadMotor, rightLeadMotor);
-        driveOdometry = new DifferentialDriveOdometry(getGyroRotation(), leftLeadMotor.getSelectedSensorPosition(),
-                rightLeadMotor.getActiveTrajectoryPosition(), new Pose2d());
+        // driveOdometry = new DifferentialDriveOdometry(getGyroRotation(), leftLeadMotor.getSelectedSensorPosition(),
+        //         rightLeadMotor.getActiveTrajectoryPosition(), new Pose2d());
     }
 
     @Override
     public void periodic() {
-        DifferentialDriveWheelPositions positions = new DifferentialDriveWheelPositions(
-                leftLeadMotor.getActiveTrajectoryPosition(), rightLeadMotor.getSelectedSensorPosition());
-        driveOdometry.update(getGyroRotation(), positions);
-        Logger.recordOutput("Estimated Robot Pose", driveOdometry.getPoseMeters());
+        // DifferentialDriveWheelPositions positions = new DifferentialDriveWheelPositions(
+        //         leftLeadMotor.getActiveTrajectoryPosition(), rightLeadMotor.getSelectedSensorPosition());
+        // driveOdometry.update(getGyroRotation(), positions);
+        // Logger.recordOutput("Estimated Robot Pose", driveOdometry.getPoseMeters());
     }
 
     /**
@@ -107,7 +108,7 @@ public class DriveSubsystem extends SubsystemBase {
      * 
      * @return {@link Rotation2d} object from Gyro measurements
      */
-    private Rotation2d getGyroRotation() {
+    public Rotation2d getGyroRotation() {
         return new Rotation2d(gyro.getGyroAngleX(), gyro.getGyroAngleY());
     }
 
@@ -117,7 +118,8 @@ public class DriveSubsystem extends SubsystemBase {
      * @return Estimated {@link Pose2d} object from odometry
      */
     public Pose2d getEstimatedPose() {
-        return driveOdometry.getPoseMeters();
+        // return driveOdometry.getPoseMeters();
+        return new Pose2d();
     }
 
     /**
@@ -126,7 +128,7 @@ public class DriveSubsystem extends SubsystemBase {
      * @param pose {@link Pose2d} object to set as current pose
      */
     public void resetPose(Pose2d pose) {
-        driveOdometry.resetPose(pose);
+        // driveOdometry.resetPose(pose);
     }
     
 
@@ -147,22 +149,19 @@ public class DriveSubsystem extends SubsystemBase {
      * @param angularSpeed Rotational speed to drive
      */
     public void simpleArcadeDrive(double driveSpeed, double angularSpeed) {
-        driveTrain.arcadeDrive(driveSpeed, angularSpeed);
+        driveTrain.arcadeDrive(driveSpeed * 0.75, angularSpeed*0.75);
     }
 
     /**
      * Command to drive the robot relative to it's current position
      * 
-     * @param xSpeed       Supplier for X-direction velocity to drive
-     * @param ySpeed       Supplier for Y-direction velocity to drive
+     * @param driveSpeed       Supplier for X-direction velocity to drive
      * @param angularSpeed Supplier for Angular velocity to turn
      * @return {@link Command} for running the Drive Train
      */
-    public Command driveRobotRelative(DoubleSupplier xSpeed, DoubleSupplier ySpeed, DoubleSupplier angularSpeed) {
+    public Command driveRobotRelative(DoubleSupplier driveSpeed, DoubleSupplier angularSpeed) {
         return run(() -> {
-            ChassisSpeeds speeds = new ChassisSpeeds(xSpeed.getAsDouble(), ySpeed.getAsDouble(),
-                    angularSpeed.getAsDouble());
-            driveWithChassisSpeeds(speeds);
+            simpleArcadeDrive(driveSpeed.getAsDouble(), angularSpeed.getAsDouble());
         });
     }
 }
