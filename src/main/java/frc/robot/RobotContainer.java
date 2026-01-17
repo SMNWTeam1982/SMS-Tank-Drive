@@ -8,8 +8,10 @@ import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.Autos;
 import frc.robot.commands.ExampleCommand;
+import frc.robot.subsystems.ArmatureSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.ExampleSubsystem;
+import frc.robot.subsystems.IntakeSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandStadiaController;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -28,9 +30,12 @@ public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final DriveSubsystem driveSubsystem = new DriveSubsystem(DriveConstants.leftFollowMotorID,
       DriveConstants.rightLeadMotorID, DriveConstants.leftFollowMotorID, DriveConstants.rightFollowMotorID);
+  private final ArmatureSubsystem armatureSubsystem = new ArmatureSubsystem(5);
+  private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem(6);
   private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
 
-  private final CommandStadiaController driverController = new CommandStadiaController(OperatorConstants.driverControllerPort);
+  private final CommandXboxController driverController = new CommandXboxController(
+      OperatorConstants.driverControllerPort);
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -58,16 +63,19 @@ public class RobotContainer {
     // Bind driver controller joysticks to robot drive
     driveSubsystem.setDefaultCommand(
         driveSubsystem.driveRobotRelative(
-            () -> driverController.getLeftX(), () -> driverController.getLeftY(), () -> driverController.getRightX()));
+            () -> -driverController.getLeftY(), () -> driverController.getLeftX()));
 
     // Schedule `ExampleCommand` when `exampleCondition` changes to `true`
     new Trigger(m_exampleSubsystem::exampleCondition)
         .onTrue(new ExampleCommand(m_exampleSubsystem));
 
+    armatureSubsystem.setDefaultCommand(armatureSubsystem.runArmCommand(() -> driverController.getRightY()));
+    //armatureSubsystem.raiseArm(driverController.getRightY());
     // Schedule `exampleMethodCommand` when the Xbox controller's B button is
     // pressed,
     // cancelling on release.
-    driverController.b().whileTrue(m_exampleSubsystem.exampleMethodCommand());
+    driverController.b().onTrue(intakeSubsystem.runIntake()).onFalse(intakeSubsystem.stopIntake());
+    driverController.a().onTrue(intakeSubsystem.runEject()).onFalse(intakeSubsystem.stopIntake());
   }
 
   /**
